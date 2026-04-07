@@ -8,7 +8,7 @@ resource aws_default_vpc defaultvpc {
 
 }
 
-resource aws_security_group terra-sec-group {
+resource aws_security_group infra-sec-group {
     name="${var.env}-aws-security-group"
     vpc_id = aws_default_vpc.defaultvpc.id
     ingress {
@@ -39,22 +39,19 @@ resource aws_security_group terra-sec-group {
 
 }
 resource aws_instance terra-ec2 {
-    for_each = tomap({
-        ec2-terra-micro="t2.micro"
-        
-    })
-    depends_on = [aws_key_pair.terra-key-pair, aws_security_group.terra-sec-group ]
+    count=2
+    depends_on = [aws_key_pair.terra-key-pair, aws_security_group.infra-sec-group ]
     key_name = aws_key_pair.terra-key-pair.key_name
-    security_groups = [aws_security_group.terra-sec-group.name]
-    ami = var.ec2_ami
-    instance_type = each.value
+    security_groups = [aws_security_group.infra-sec-group.name]
+    ami = var.ami
+    instance_type = var.instancetype
 
     root_block_device {
-      volume_size= var.env == "prod" ? 20:var.ec2_volume_size
-  volume_type=var.ec2_volume_type
+      volume_size= var.env == "prod" ? 20:var.volsize
+  volume_type=var.voltype
     }
     tags = {
-      Name=each.key
+      Name="${var.env}-infra-setup-ec2"
       Environment=var.env
     }
 
